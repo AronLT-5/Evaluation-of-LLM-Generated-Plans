@@ -1,0 +1,38 @@
+run:
+  output_root: runs
+  resume: false
+
+openai:
+  api_key_env_var: OPENAI_API_KEY
+  model: gpt-4.1-mini
+  multi_model: false
+  model1: null
+  model2: null
+  model3: null
+  use_batch_api: true
+  temperature: 0.2
+  top_p: 1.0
+  max_output_tokens: 2500
+  seed: 42
+  structured_outputs: true
+
+datasets:
+  humaneval:
+    enabled: true
+    max_tasks: 50
+  swebench_verified:
+    enabled: false
+  refactorbench_py:
+    enabled: false
+
+retries:
+  max_retries_per_batch_call: 1
+
+budget:
+  budget_total: 5.0
+  allow_over_budget: false
+  safety_margin: 0.9
+  pricing:
+    input_per_1m_tokens: 0.3
+    output_per_1m_tokens: 1.2
+    currency: USD

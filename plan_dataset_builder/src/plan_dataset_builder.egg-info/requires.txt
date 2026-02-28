@@ -1,0 +1,9 @@
+pydantic<3,>=2.6
+typer<1,>=0.12
+PyYAML<7,>=6.0
+datasets<4,>=2.18
+openai<3,>=1.40.0
+
+[dev]
+pytest<9,>=8.0
+ruff<1,>=0.5

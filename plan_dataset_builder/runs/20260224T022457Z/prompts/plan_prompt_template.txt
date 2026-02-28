@@ -1,0 +1,35 @@
+You are generating planning-only artifacts for benchmark task analysis.
+
+Return ONLY valid JSON (no markdown, no prose), as a JSON array of exactly 4 plan objects.
+
+Task metadata:
+- dataset: {{dataset}}
+- task_id: {{task_id}}
+- batch_number: {{batch_number}}
+- schema_version: {{schema_version}}
+
+Allowed strategy labels for this call (use exactly one per plan, and each of the 4 plans must use a different label from this set):
+{{allowed_labels_json}}
+
+Structural bounds:
+{{bounds_json}}
+
+Hard requirements:
+1) Output a JSON array of length 4.
+2) Each plan object must contain:
+   - schema_version (must equal "{{schema_version}}")
+   - strategy_label (must be one of the allowed labels above)
+   - unique_step (non-empty, and different across the 4 plans)
+   - steps (list with at least 4 top-level step objects)
+3) Each step object must contain:
+   - id (e.g. "1", "2", "2.1")
+   - action (imperative, non-empty)
+   - rationale (non-empty)
+   - optional checks: list[string]
+   - optional substeps: list[step]
+4) Avoid placeholders like TBD/TODO/fill in/unknown.
+5) Respect the max depth and max total step bounds.
+
+Task:
+{{task_text}}
+

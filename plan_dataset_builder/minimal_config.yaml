@@ -1,0 +1,15 @@
+openai:
+  use_batch_api: false
+datasets:
+  humaneval:
+    enabled: true
+    max_tasks: 1
+  swebench_verified:
+    enabled: false
+  refactorbench_py:
+    enabled: false
+retries:
+  max_retries_per_batch_call: 0
+budget:
+  budget_total: 2.0
+  allow_over_budget: false

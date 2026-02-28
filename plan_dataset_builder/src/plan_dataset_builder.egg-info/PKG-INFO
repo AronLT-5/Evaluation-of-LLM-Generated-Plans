@@ -1,0 +1,109 @@
+Metadata-Version: 2.4
+Name: plan-dataset-builder
+Version: 0.1.0
+Summary: Reproducible plan dataset production system for HumanEval, SWE-bench Verified, and RefactorBench Python.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic<3,>=2.6
+Requires-Dist: typer<1,>=0.12
+Requires-Dist: PyYAML<7,>=6.0
+Requires-Dist: datasets<4,>=2.18
+Requires-Dist: openai<3,>=1.40.0
+Provides-Extra: dev
+Requires-Dist: pytest<9,>=8.0; extra == "dev"
+Requires-Dist: ruff<1,>=0.5; extra == "dev"
+
+# plan_dataset_builder
+
+Plan dataset production system (plan generator only) for:
+- HumanEval (`humaneval`)
+- SWE-bench Verified (`swebench_verified`)
+- RefactorBench Python (`refactorbench_py`)
+
+The system builds reproducible JSONL datasets of LLM-generated plans with retry logic, schema validation, diversity constraints, resume support, and budget monitoring.
+
+## Install
+
+```bash
+cd plan_dataset_builder
+python -m venv .venv
+. .venv/Scripts/activate  # PowerShell: .venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+```
+
+## Quick Start
+
+1. Create sample config:
+
+```bash
+plan-dataset-builder init-config example_config.yaml
+```
+
+2. Set API key:
+
+```bash
+set OPENAI_API_KEY=YOUR_KEY   # Windows cmd
+# or in PowerShell:
+$env:OPENAI_API_KEY="YOUR_KEY"
+```
+
+3. Dry run (task loading + manifests/tasks JSONL only):
+
+```bash
+plan-dataset-builder dry-run --config example_config.yaml
+```
+
+4. Full run:
+
+```bash
+plan-dataset-builder run --config example_config.yaml
+```
+
+5. Resume:
+
+```bash
+plan-dataset-builder run --config example_config.yaml --run-id <run_id> --resume
+```
+
+6. Validate run artifacts:
+
+```bash
+plan-dataset-builder validate-run runs/<run_id>
+```
+
+## Output Structure
+
+Per run:
+
+```text
+runs/<run_id>/
+  runs.jsonl
+  logs/batch_calls.jsonl
+  prompts/plan_prompt_template.txt
+  config/run_config.json
+  manifests/
+    <dataset>_task_ids.json
+    <dataset>_complete_task_ids.json
+    <dataset>_incomplete_task_ids.json
+    swebench_verified_first100_instance_ids.json
+  datasets/<dataset>/
+    tasks.jsonl
+    plans.jsonl
+```
+
+## Notes
+
+- The primary task field is shown under `[PRIMARY_TASK]` and is omitted from `[CONTEXT_FIELDS]` by default to avoid duplication.
+- Gold/answer fields are excluded from `task_text` but preserved in `extras`.
+- Exactly 12 plans per task are targeted: 3 calls x 4 plans per call.
+- Batch API mode creates `/v1/responses` JSONL requests with `custom_id` mapping.
+- Budget preflight and chunking use an upper-bound estimate; actual token usage is used when available.
+
+## Batch API Usage
+
+When `openai.use_batch_api: true`:
+- Input JSONL requests are uploaded with `purpose="batch"`.
+- A batch is created with `completion_window="24h"`.
+- Outputs are matched by `custom_id`.
+- Failed/invalid requests are retried up to configured limits via subsequent chunks.
+

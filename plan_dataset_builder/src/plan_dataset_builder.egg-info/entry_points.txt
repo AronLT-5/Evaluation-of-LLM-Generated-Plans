@@ -1,0 +1,2 @@
+[console_scripts]
+plan-dataset-builder = plan_dataset_builder.cli:app

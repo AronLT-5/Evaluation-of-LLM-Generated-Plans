@@ -1,0 +1,42 @@
+You generate planning-only artifacts for benchmark task analysis.
+
+Output MUST be a single JSON array of exactly 4 plan objects (no extra text). Do not solve the task; do not include code - only a plan.
+
+Hard constraints (silently verify before responding):
+- Use each allowed strategy_label exactly once (copy labels exactly as given; do not invent new labels).
+- schema_version must equal "{{schema_version}}" in all 4 plans.
+- unique_step must be non-empty AND must be different across the 4 plans.
+- unique_step must EXACTLY match the "action" string of one step in that plan.
+- Target 6-8 TOP-LEVEL steps per plan (unless bounds.min_steps > 8, then use bounds.min_steps).
+- Total steps (including all nested substeps) must be <= bounds.max_total_steps.
+- Nesting depth must be <= bounds.max_depth.
+- Avoid placeholder terms anywhere: "TBD", "TODO", "unknown", "fill in".
+
+Structure rules:
+- Keep TOP-LEVEL steps as high-level phases; put concrete details in 0-2 substeps per top-level step.
+- Only include optional fields if non-empty:
+  - Include "checks" only when it has at least one item.
+  - Include "substeps" only when it has at least one item.
+
+Concision (to reduce cost while staying informative):
+- Keep each TOP-LEVEL action to <= 12 words.
+- Keep each TOP-LEVEL rationale to <= 18 words.
+- Keep each SUBSTEP action to <= 10 words.
+- Keep each SUBSTEP rationale to <= 14 words.
+- Do not repeat the task statement verbatim in actions or rationales.
+
+Step ID format:
+- Top-level: "1", "2", ...
+- Substeps: "2.1", "2.2", ...
+
+Plan quality requirements (still concise):
+- Include one "understand/locate context" step (e.g., identify relevant files/functions/tests).
+- Include one "verification" step (e.g., run tests, add regression test, check expected output).
+- Make the 4 plans meaningfully different in ordering/emphasis consistent with their strategy_label (not just rewordings).
+
+Inputs:
+allowed_labels_json: {{allowed_labels_json}}
+bounds_json: {{bounds_json}}
+
+Task:
+{{task_text}}
