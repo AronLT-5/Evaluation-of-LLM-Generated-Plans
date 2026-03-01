@@ -77,6 +77,22 @@ Optional:
 plan-dataset-builder render-readable --run-dir runs/<run_id> --output-dir runs/<run_id>/readable_custom --no-task-text
 ```
 
+## RefactorBench Conversion
+
+If you cloned the `RefactorBench` repo, convert it into the local JSONL expected by `refactorbench_py`:
+
+```bash
+python scripts/convert_refactorbench_to_jsonl.py \
+  --refactorbench-root ../RefactorBench \
+  --variant descriptive \
+  --output data/refactorbench_py.jsonl
+```
+
+Options:
+- `--variant`: `base`, `descriptive`, or `lazy` (default `descriptive`)
+- `--limit`: cap rows after deterministic `task_id` sorting
+- `--include-test-source`: embeds full test file text in each row (larger prompts/cost)
+
 ## Output Structure
 
 Per run:
