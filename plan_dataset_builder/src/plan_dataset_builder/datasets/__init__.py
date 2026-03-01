@@ -14,8 +14,7 @@ def get_enabled_loaders(config: AppConfig, config_dir: Path) -> list[DatasetLoad
     if config.datasets.humaneval.enabled:
         loaders.append(HumanEvalLoader())
     if config.datasets.swebench_verified.enabled:
-        loaders.append(SWEBenchVerifiedLoader())
+        loaders.append(SWEBenchVerifiedLoader(config_dir=config_dir))
     if config.datasets.refactorbench_py.enabled:
         loaders.append(RefactorBenchPyLoader(config_dir=config_dir))
     return loaders
-

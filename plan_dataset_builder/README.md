@@ -93,6 +93,54 @@ Options:
 - `--limit`: cap rows after deterministic `task_id` sorting
 - `--include-test-source`: embeds full test file text in each row (larger prompts/cost)
 
+## Sectioned Production Workflow (4 x 25/25)
+
+To run 100-task SWE-bench + 100-task RefactorBench in manual-gated sections:
+
+1. Prepare section configs and allowlists:
+
+```bash
+plan-dataset-builder prepare-sections \
+  --config main_config.yaml \
+  --section-size 25 \
+  --sections 4 \
+  --output-dir section_runs \
+  --run-prefix full_system
+```
+
+2. Run section 1:
+
+```bash
+plan-dataset-builder run --config section_runs/section_01/section_config.yaml --run-id full_s01_v1
+```
+
+3. Validate and inspect cost:
+
+```bash
+plan-dataset-builder validate-run runs/full_s01_v1
+```
+
+4. Decide manually:
+- rerun same section with new run id, or
+- proceed to `section_02`, `section_03`, `section_04`.
+
+5. Merge approved section runs into one consolidated artifact:
+
+```bash
+plan-dataset-builder merge-sections \
+  --section-run s1=runs/full_s01_v2 \
+  --section-run s2=runs/full_s02_v1 \
+  --section-run s3=runs/full_s03_v1 \
+  --section-run s4=runs/full_s04_v1 \
+  --output-run-id full_system_merged_001
+```
+
+Section preparation writes:
+- `section_runs/sections_manifest.json`
+- `section_runs/section_XX/swebench_verified_task_ids.json`
+- `section_runs/section_XX/refactorbench_py_task_ids.json`
+- `section_runs/section_XX/section_config.yaml`
+
 ## Output Structure
 
 Per run:

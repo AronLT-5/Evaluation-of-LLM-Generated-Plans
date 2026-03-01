@@ -30,10 +30,14 @@ datasets:
     enabled: true
     max_tasks: 500
     write_first100_manifest: true
+    task_id_allowlist_path: null
+    task_id_allowlist_strict: true
   refactorbench_py:
     enabled: false
     local_jsonl_path: null
     max_tasks: null
+    task_id_allowlist_path: null
+    task_id_allowlist_strict: true
 task_text:
   max_task_text_chars: 200000
   max_field_chars: 80000

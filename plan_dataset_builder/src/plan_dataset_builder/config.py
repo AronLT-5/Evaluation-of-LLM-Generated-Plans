@@ -106,12 +106,36 @@ class SWEBenchVerifiedDatasetConfig(BaseModel):
     enabled: bool = True
     max_tasks: int | None = 500
     write_first100_manifest: bool = True
+    task_id_allowlist_path: str | None = None
+    task_id_allowlist_strict: bool = True
+
+    @field_validator("task_id_allowlist_path")
+    @classmethod
+    def validate_task_id_allowlist_path(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("task_id_allowlist_path must be a non-empty string when provided")
+        return cleaned
 
 
 class RefactorBenchPyDatasetConfig(BaseModel):
     enabled: bool = False
     local_jsonl_path: str | None = None
     max_tasks: int | None = None
+    task_id_allowlist_path: str | None = None
+    task_id_allowlist_strict: bool = True
+
+    @field_validator("task_id_allowlist_path")
+    @classmethod
+    def validate_task_id_allowlist_path(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("task_id_allowlist_path must be a non-empty string when provided")
+        return cleaned
 
     @model_validator(mode="after")
     def ensure_path_if_enabled(self) -> "RefactorBenchPyDatasetConfig":

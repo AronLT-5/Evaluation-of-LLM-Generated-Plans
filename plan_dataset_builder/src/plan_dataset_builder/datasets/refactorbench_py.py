@@ -41,6 +41,21 @@ class RefactorBenchPyLoader(DatasetLoader):
         if max_tasks is not None:
             rows = rows[:max_tasks]
 
+        selected_ids = [str(row["task_id"]) for row in rows]
+        allowlist = self._load_allowlist(config)
+        if allowlist is not None:
+            allowlist_set = set(allowlist)
+            rows = [row for row in rows if str(row["task_id"]) in allowlist_set]
+            selected_ids = [str(row["task_id"]) for row in rows]
+            if config.datasets.refactorbench_py.task_id_allowlist_strict:
+                selected_set = set(selected_ids)
+                missing = [task_id for task_id in allowlist if task_id not in selected_set]
+                if missing:
+                    raise ValueError(
+                        "RefactorBench allowlist contains IDs missing from filtered dataset rows: "
+                        f"{missing}"
+                    )
+
         tasks = []
         for row in rows:
             task_id = str(row["task_id"])
@@ -63,7 +78,15 @@ class RefactorBenchPyLoader(DatasetLoader):
                 )
             )
 
-        return DatasetLoadResult(dataset=self.dataset_name, source=self.source, tasks=tasks)
+        extra_manifests: dict[str, Any] = {}
+        if allowlist is not None:
+            extra_manifests["refactorbench_py_selected_task_ids.json"] = selected_ids
+        return DatasetLoadResult(
+            dataset=self.dataset_name,
+            source=self.source,
+            tasks=tasks,
+            extra_manifests=extra_manifests,
+        )
 
     def _read_jsonl(self, path: Path) -> list[dict[str, Any]]:
         if not path.exists():
@@ -78,6 +101,28 @@ class RefactorBenchPyLoader(DatasetLoader):
                 if "task_id" not in row:
                     raise ValueError(f"Missing task_id at line {line_number} in {path}")
                 output.append(dict(row))
+        return output
+
+    def _load_allowlist(self, config: AppConfig) -> list[str] | None:
+        allowlist_path_raw = config.datasets.refactorbench_py.task_id_allowlist_path
+        if not allowlist_path_raw:
+            return None
+        allowlist_path = Path(allowlist_path_raw)
+        if not allowlist_path.is_absolute():
+            allowlist_path = (self.config_dir / allowlist_path).resolve()
+        if not allowlist_path.exists():
+            raise FileNotFoundError(f"RefactorBench allowlist file not found: {allowlist_path}")
+
+        payload = json.loads(allowlist_path.read_text(encoding="utf-8"))
+        if not isinstance(payload, list):
+            raise ValueError(f"RefactorBench allowlist must be a JSON array: {allowlist_path}")
+        output: list[str] = []
+        for index, item in enumerate(payload, start=1):
+            if not isinstance(item, str) or not item.strip():
+                raise ValueError(
+                    f"RefactorBench allowlist entry at index {index} must be a non-empty string"
+                )
+            output.append(item)
         return output
 
     @staticmethod

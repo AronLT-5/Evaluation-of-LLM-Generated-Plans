@@ -85,3 +85,40 @@ def test_config_prompt_cache_retention_in_memory_valid() -> None:
 def test_config_prompt_cache_retention_invalid() -> None:
     with pytest.raises(ValueError):
         AppConfig.model_validate({"openai": {"prompt_cache_retention": "7d"}})
+
+
+def test_dataset_allowlist_paths_accept_none_or_non_empty() -> None:
+    cfg = AppConfig.model_validate(
+        {
+            "datasets": {
+                "humaneval": {"enabled": False},
+                "swebench_verified": {
+                    "enabled": True,
+                    "task_id_allowlist_path": None,
+                    "task_id_allowlist_strict": True,
+                },
+                "refactorbench_py": {
+                    "enabled": True,
+                    "local_jsonl_path": "data/refactorbench_py.jsonl",
+                    "task_id_allowlist_path": "manifests/ref_allowlist.json",
+                    "task_id_allowlist_strict": False,
+                },
+            }
+        }
+    )
+    assert cfg.datasets.swebench_verified.task_id_allowlist_path is None
+    assert cfg.datasets.refactorbench_py.task_id_allowlist_path == "manifests/ref_allowlist.json"
+    assert cfg.datasets.refactorbench_py.task_id_allowlist_strict is False
+
+
+def test_dataset_allowlist_paths_reject_empty_string() -> None:
+    with pytest.raises(ValueError):
+        AppConfig.model_validate(
+            {
+                "datasets": {
+                    "humaneval": {"enabled": False},
+                    "swebench_verified": {"enabled": True, "task_id_allowlist_path": "   "},
+                    "refactorbench_py": {"enabled": False},
+                }
+            }
+        )

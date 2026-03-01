@@ -8,6 +8,7 @@ from plan_dataset_builder.config import write_sample_config
 from plan_dataset_builder.readable_export import export_failed_run_readable, export_run_readable
 from plan_dataset_builder.run_builder import execute_run
 from plan_dataset_builder.run_validation import validate_run_dir
+from plan_dataset_builder.sectioning import merge_sections, prepare_sections
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 
@@ -70,6 +71,67 @@ def run(
             typer.echo(f"Failed readable index: {failed_summary['index_path']}")
         except Exception as exc:
             typer.echo(f"Warning: failed-plan readable export failed: {exc}", err=True)
+
+
+@app.command("prepare-sections")
+def prepare_sections_cmd(
+    config: Path = typer.Option(..., "--config", exists=True, dir_okay=False, readable=True),
+    section_size: int = typer.Option(25, "--section-size", min=1),
+    sections: int = typer.Option(4, "--sections", min=1),
+    output_dir: Path = typer.Option(Path("section_runs"), "--output-dir"),
+    run_prefix: str = typer.Option("full_system", "--run-prefix"),
+) -> None:
+    """Prepare deterministic section configs + allowlists for manual-gated sectioned runs."""
+    summary = prepare_sections(
+        config_path=config,
+        section_size=section_size,
+        sections=sections,
+        output_dir=output_dir,
+        run_prefix=run_prefix,
+    )
+    typer.echo(f"Sections prepared under: {summary['output_dir']}")
+    typer.echo(f"Sections manifest: {summary['sections_manifest_path']}")
+    for section in summary["sections"]:
+        typer.echo(
+            f"- s{section['section']:02d}: "
+            f"{section['datasets']['swebench_verified']['task_count']} swebench + "
+            f"{section['datasets']['refactorbench_py']['task_count']} refactorbench | "
+            f"config={section['section_config_path']}"
+        )
+
+
+@app.command("merge-sections")
+def merge_sections_cmd(
+    section_run: list[str] = typer.Option(..., "--section-run"),
+    output_run_id: str = typer.Option(..., "--output-run-id"),
+) -> None:
+    """Merge 4 approved section runs into one consolidated artifact run directory."""
+
+    parsed: dict[str, Path] = {}
+    for item in section_run:
+        if "=" not in item:
+            raise typer.BadParameter(
+                f"Invalid --section-run '{item}'. Expected format 'sN=path' (e.g., s1=runs/full_s01_v1)."
+            )
+        key, value = item.split("=", 1)
+        key = key.strip().lower()
+        value = value.strip()
+        if not key or not value:
+            raise typer.BadParameter(
+                f"Invalid --section-run '{item}'. Expected non-empty 'sN=path' pair."
+            )
+        if key in parsed:
+            raise typer.BadParameter(f"Duplicate section key provided: {key}")
+        parsed[key] = Path(value)
+
+    summary = merge_sections(section_runs=parsed, output_run_id=output_run_id)
+    typer.echo(f"Merged output run directory: {summary['output_run_dir']}")
+    typer.echo(f"Merge info: {summary['merge_info_path']}")
+    for dataset, counts in summary["counts"].items():
+        typer.echo(
+            f"- {dataset}: tasks={counts['tasks']}, plans={counts['plans']}, "
+            f"complete={counts['complete_tasks']}, incomplete={counts['incomplete_tasks']}"
+        )
 
 
 @app.command("validate-run")
