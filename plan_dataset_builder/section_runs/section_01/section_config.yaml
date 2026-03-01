@@ -1,0 +1,100 @@
+﻿run:
+  run_id: null
+  output_root: runs
+  resume: false
+openai:
+  api_key_env_var: OPENAI_API_KEY
+  model: gpt-5.2
+  multi_model: true
+  model1: gpt-5.2
+  model2: gpt-4.1
+  model3: gpt-4.1-mini
+  use_batch_api: true
+  temperature: null
+  top_p: null
+  max_output_tokens: 2400
+  seed: null
+  structured_outputs: true
+  prompt_cache_enabled: true
+  prompt_cache_key_prefix: plan-dataset-builder-main
+  prompt_cache_retention: 24h
+datasets:
+  humaneval:
+    enabled: false
+    max_tasks: 50
+  swebench_verified:
+    enabled: true
+    max_tasks: 100
+    write_first100_manifest: true
+    task_id_allowlist_path: swebench_verified_task_ids.json
+    task_id_allowlist_strict: true
+  refactorbench_py:
+    enabled: true
+    local_jsonl_path: "C:/Users/Aron/Evaluation of LLM Generated Plans/plan_dataset_builder/data/refactorbench_py.jsonl"
+    max_tasks: 100
+    task_id_allowlist_path: refactorbench_py_task_ids.json
+    task_id_allowlist_strict: true
+task_text:
+  max_task_text_chars: 200000
+  max_field_chars: 80000
+  include_primary_in_context_fields: false
+prompt:
+  template_path: prompts/plan_prompt_template.txt
+  schema_version: '1.0'
+  bounds:
+    min_steps: 4
+    max_depth: 2
+    max_total_steps: 25
+diversity:
+  label_sets:
+    humaneval:
+    - Spec-First
+    - Examples-First
+    - Edge-Cases-First
+    - Invariants-First
+    - Pseudocode-First
+    - Decompose-Then-Solve
+    - Brute-Force-Then-Optimize
+    - Type-Driven
+    - Complexity-Guardrails
+    - Test-Design-Mental
+    - Failure-Modes-First
+    - Minimal-Solution-First
+    swebench_verified:
+    - Reproduce-First
+    - Minimal-Failing-Test
+    - Stacktrace-Guided
+    - Search-And-Trace
+    - Config-Dependency-Check
+    - Docs-Spec-First
+    - Logging-Instrumentation
+    - Git-Blame-Regression
+    - Patch-Minimization
+    - Refactor-Then-Fix
+    - Add-Regression-Test
+    - Risk-Assessment-First
+    refactorbench_py:
+    - Behavior-Preservation-First
+    - Characterization-Tests-First
+    - Small-Commits-Plan
+    - Extract-Function-Focus
+    - Simplify-Control-Flow
+    - Remove-Duplication
+    - Clarify-Names-Interfaces
+    - Data-Structure-Cleanup
+    - Reduce-Coupling
+    - Incremental-Refactor-Loop
+    - Lint-Format-First
+    - Performance-Safe-Refactor
+  enforce_unique_labels_across_12: true
+retries:
+  max_retries_per_batch_call: 3
+budget:
+  budget_total: 100.0
+  pricing:
+    input_per_1m_tokens: 0.3
+    output_per_1m_tokens: 1.2
+    currency: USD
+  safety_margin: 0.9
+  allow_over_budget: false
+

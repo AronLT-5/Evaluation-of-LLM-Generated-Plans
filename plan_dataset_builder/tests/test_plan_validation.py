@@ -80,6 +80,56 @@ def test_validate_plan_group_rejects_placeholder_content() -> None:
         )
 
 
+def test_validate_plan_group_allows_identifier_like_unknown_tokens() -> None:
+    plan_a = _make_plan("A", first_action="Inspect test_unknown_unit3 behavior")
+    plan_a["steps"][0]["checks"] = ["pytest astropy/units/tests/test_units.py::test_unknown_unit3"]
+    payload = [
+        plan_a,
+        _make_plan("B", first_action="Map edge cases"),
+        _make_plan("C", first_action="Draft approach"),
+        _make_plan("D", first_action="Define checks"),
+    ]
+    result = validate_plan_group(
+        json.dumps(payload),
+        allowed_labels=["A", "B", "C", "D"],
+        schema_version="1.0",
+        bounds=PromptBoundsConfig(min_steps=4, max_depth=2, max_total_steps=25),
+    )
+    assert len(result.plans) == PLANS_PER_BATCH
+
+
+def test_validate_plan_group_rejects_standalone_unknown_in_natural_language() -> None:
+    payload = [
+        _make_plan("A", first_action="Inspect task statement"),
+        _make_plan("B", first_action="Map edge cases"),
+        _make_plan("C", first_action="Draft approach"),
+        _make_plan("D", unique_step="Investigate unknown root cause", first_action="Define checks"),
+    ]
+    with pytest.raises(PlanValidationError):
+        validate_plan_group(
+            json.dumps(payload),
+            allowed_labels=["A", "B", "C", "D"],
+            schema_version="1.0",
+            bounds=PromptBoundsConfig(min_steps=4, max_depth=2, max_total_steps=25),
+        )
+
+
+def test_validate_plan_group_allows_unknowns_plural() -> None:
+    payload = [
+        _make_plan("A", unique_step="Map unknowns across failing tests", first_action="Inspect task statement"),
+        _make_plan("B", first_action="Map edge cases"),
+        _make_plan("C", first_action="Draft approach"),
+        _make_plan("D", first_action="Define checks"),
+    ]
+    result = validate_plan_group(
+        json.dumps(payload),
+        allowed_labels=["A", "B", "C", "D"],
+        schema_version="1.0",
+        bounds=PromptBoundsConfig(min_steps=4, max_depth=2, max_total_steps=25),
+    )
+    assert len(result.plans) == PLANS_PER_BATCH
+
+
 def test_validate_plan_group_allows_unique_step_not_matching_action_with_warning() -> None:
     payload = [
         _make_plan("A", unique_step="This is not an action", first_action="Inspect task statement"),

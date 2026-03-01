@@ -8,12 +8,15 @@ from typing import Any, Sequence
 from pydantic import ValidationError
 
 from plan_dataset_builder.config import PromptBoundsConfig
-from plan_dataset_builder.constants import PLACEHOLDER_TERMS, PLANS_PER_BATCH
+from plan_dataset_builder.constants import PLANS_PER_BATCH
 from plan_dataset_builder.labels import normalize_unique_step
 from plan_dataset_builder.models import PlanSchema, StepSchema
 
-PLACEHOLDER_PATTERN = re.compile(
-    "|".join(re.escape(term) for term in PLACEHOLDER_TERMS), flags=re.IGNORECASE
+PLACEHOLDER_PATTERNS = (
+    re.compile(r"\btbd\b", flags=re.IGNORECASE),
+    re.compile(r"\btodo\b", flags=re.IGNORECASE),
+    re.compile(r"\bfill\s+in\b", flags=re.IGNORECASE),
+    re.compile(r"\bunknown\b", flags=re.IGNORECASE),
 )
 
 
@@ -29,22 +32,31 @@ class PlanValidationResult:
     warnings_by_plan: list[list[str]]
 
 
-def _walk_strings(value: Any) -> list[str]:
+def _contains_placeholder_nl(text: str) -> bool:
+    return any(pattern.search(text) for pattern in PLACEHOLDER_PATTERNS)
+
+
+def _iter_nl_text_fields_from_steps(steps: Sequence[StepSchema]) -> list[str]:
     values: list[str] = []
-    if isinstance(value, str):
-        values.append(value)
-    elif isinstance(value, dict):
-        for item in value.values():
-            values.extend(_walk_strings(item))
-    elif isinstance(value, list):
-        for item in value:
-            values.extend(_walk_strings(item))
+    for step in steps:
+        values.append(step.action)
+        values.append(step.rationale)
+        if step.checks:
+            values.extend(step.checks)
+        if step.substeps:
+            values.extend(_iter_nl_text_fields_from_steps(step.substeps))
     return values
 
 
-def _contains_placeholder(value: Any) -> bool:
-    for text in _walk_strings(value):
-        if PLACEHOLDER_PATTERN.search(text):
+def _iter_nl_text_fields(plan: PlanSchema) -> list[str]:
+    values = [plan.unique_step]
+    values.extend(_iter_nl_text_fields_from_steps(plan.steps))
+    return values
+
+
+def _plan_contains_placeholder(plan: PlanSchema) -> bool:
+    for text in _iter_nl_text_fields(plan):
+        if _contains_placeholder_nl(text):
             return True
     return False
 
@@ -118,9 +130,9 @@ def validate_plan_object(
     if total_steps > bounds.max_total_steps:
         raise PlanValidationError(f"total steps exceeded: {total_steps} > {bounds.max_total_steps}")
 
-    payload = model.model_dump(mode="json")
-    if _contains_placeholder(payload):
+    if _plan_contains_placeholder(model):
         raise PlanValidationError("Placeholder content detected")
+    payload = model.model_dump(mode="json")
 
     warnings: list[str] = []
     target_min = max(6, bounds.min_steps)
